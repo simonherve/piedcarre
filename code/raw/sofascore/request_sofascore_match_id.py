@@ -2,16 +2,17 @@ import requests
 import json
 import pandas as pd
 import sys
+from functions import get_json
 
 def insert_data(league_id, season_id, round, slug="", playoff=False):
     # Make a request in function of the phase, regular or playoff
     if playoff:
-        id_response = requests.get(f'https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/events/round/{round}/slug/{slug}')
+        id_response = get_json(f'https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/events/round/{round}/slug/{slug}')
     else:
-        id_response = requests.get(f'https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/events/round/{round}')
+        id_response = get_json(f'https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/events/round/{round}')
     
-    if id_response.status_code == 200:
-        data_id = id_response.json()
+    if id_response["status_code"] == 200:
+        data_id = id_response["json"]
         matchs = []
         for _ in data_id["events"]:
             # The data schema of the conserved data
@@ -42,15 +43,16 @@ def main(league_id, season_id):
     save_file = pd.DataFrame(columns=["id", "tournament", "match_name", "league", "country", "season", "round", "status"])
     save_file.to_csv(f"../../../data/raw/sofascore/id/matchs/{league_id}_{season_id}.csv", index=False)
     # Request the number of rounds and playoff
-    rounds = requests.get(f"https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/rounds")
+    rounds = get_json(f"https://www.sofascore.com/api/v1/unique-tournament/{league_id}/season/{season_id}/rounds")
     # Insert the data, it depend of the phase
-    if rounds.status_code == 200:
-        data_rounds = rounds.json()
+    if rounds["status_code"] == 200:
+        data_rounds = rounds["json"]
         for _ in data_rounds["rounds"]:
             if len(_) > 1:
                 insert_data(league_id, season_id, _["round"], _["slug"], True)
             else:
                 insert_data(league_id, season_id, _["round"])
+            print("ok")
     else:
         print("error")
 
